@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisionAR - AI Face Filter Lab (11 Features)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- MediaPipe FaceMesh & Camera Utils -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">✨</div>
+        <div>
+          <h1>VisionAR <span class="badge">AI Lab</span></h1>
+          <p class="subtitle">Real-time 468-Point Neural Face Filter Studio</p>
+        </div>
+      </div>
+      <div class="status-bar">
+        <div class="status-indicator" id="trackingStatus">
+          <span class="status-dot"></span>
+          <span class="status-text">Initializing AI Model...</span>
+        </div>
+        <div class="fps-pill" id="fpsDisplay">-- FPS</div>
+      </div>
+    </header>
+
+    <!-- Main Viewport -->
+    <main class="viewport-wrapper">
+      <div class="stage" id="cameraStage">
+        <!-- Hidden source video -->
+        <video id="inputVideo" playsinline autoplay muted></video>
+        <!-- Overlay Canvas for Filters -->
+        <canvas id="outputCanvas"></canvas>
+        
+        <!-- Flash Effect Overlay -->
+        <div class="flash-overlay" id="flashOverlay"></div>
+
+        <!-- Countdown Overlay -->
+        <div class="countdown-overlay" id="countdownOverlay"></div>
+
+        <!-- HUD Overlay -->
+        <div class="stage-hud">
+          <div class="hud-left">
+            <span class="active-tag" id="activeFilterTag">Active: 🕶️ Sunglasses</span>
+          </div>
+          <div class="hud-right">
+            <button class="icon-btn" id="btnFlipCamera" title="Mirror / Flip View">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4M4 8V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4M16 12l4-4-4-4M8 12l-4 4 4 4"/></svg>
+              <span>Mirror</span>
+            </button>
+            <button class="icon-btn" id="btnResetFilters" title="Clear all filters (Key: C)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              <span>Clear</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Snapshot & Control Strip -->
+      <div class="action-strip">
+        <div class="mode-toggles">
+          <label class="toggle-pill">
+            <input type="checkbox" id="multiFilterCheck">
+            <span class="slider"></span>
+            <span class="label">Multi-Filter Stack</span>
+          </label>
+        </div>
+
+        <button class="shutter-btn" id="btnSnapshot" title="Take HD Snapshot (Key: S)">
+          <div class="shutter-inner">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </div>
+          <span class="btn-caption">Snapshot (S)</span>
+        </button>
+
+        <div class="snapshot-preview" id="snapshotGallery">
+          <div class="preview-thumb-empty">No snaps yet</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Filter Deck (11 Features) -->
+    <section class="filters-deck">
+      <div class="deck-header">
+        <h2>Choose Your Filter <span class="counter">(11 Features Available)</span></h2>
+        <span class="hint">Hotkeys: Keys [1] to [0] &amp; [-]</span>
+      </div>
+
+      <div class="filters-grid">
+        <!-- 1. Sunglasses -->
+        <button class="filter-card active" data-filter="sunglasses" data-hotkey="1">
+          <div class="filter-badge">1</div>
+          <div class="filter-icon">🕶️</div>
+          <div class="filter-info">
+            <div class="filter-name">Cool Shades</div>
+            <div class="filter-desc">Auto-rotated polarized glasses</div>
+          </div>
+        </button>
+
+        <!-- 2. Mustache -->
+        <button class="filter-card" data-filter="mustache" data-hotkey="2">
+          <div class="filter-badge">2</div>
+          <div class="filter-icon">🥸</div>
+          <div class="filter-info">
+            <div class="filter-name">Vintage Mustache</div>
+            <div class="filter-desc">Classic gentleman handlebar</div>
+          </div>
+        </button>
+
+        <!-- 3. Golden Crown -->
+        <button class="filter-card" data-filter="crown" data-hotkey="3">
+          <div class="filter-badge">3</div>
+          <div class="filter-icon">👑</div>
+          <div class="filter-info">
+            <div class="filter-name">Royal Crown</div>
+            <div class="filter-desc">Golden tiara with rubies</div>
+          </div>
+        </button>
+
+        <!-- 4. Puppy Ears & Nose -->
+        <button class="filter-card" data-filter="puppy" data-hotkey="4">
+          <div class="filter-badge">4</div>
+          <div class="filter-icon">🐶</div>
+          <div class="filter-info">
+            <div class="filter-name">Puppy Dog</div>
+            <div class="filter-desc">Floppy ears + cute dog snout</div>
+          </div>
+        </button>
+
+        <!-- 5. Clown Nose -->
+        <button class="filter-card" data-filter="clown" data-hotkey="5">
+          <div class="filter-badge">5</div>
+          <div class="filter-icon">🔴</div>
+          <div class="filter-info">
+            <div class="filter-name">Clown Nose</div>
+            <div class="filter-desc">Glowing 3D red rubber bulb</div>
+          </div>
+        </button>
+
+        <!-- 6. Laser Eyes -->
+        <button class="filter-card" data-filter="lasereyes" data-hotkey="6">
+          <div class="filter-badge">6</div>
+          <div class="filter-icon">⚡</div>
+          <div class="filter-info">
+            <div class="filter-name">Laser Cyber Eyes</div>
+            <div class="filter-desc">Electric flares &amp; glowing pupils</div>
+          </div>
+        </button>
+
+        <!-- 7. Hologram Mesh -->
+        <button class="filter-card" data-filter="facemesh" data-hotkey="7">
+          <div class="filter-badge">7</div>
+          <div class="filter-icon">🕸️</div>
+          <div class="filter-info">
+            <div class="filter-name">3D Cyber Mesh</div>
+            <div class="filter-desc">468-point neural tessellation</div>
+          </div>
+        </button>
+
+        <!-- 8. Cartoon Sketch -->
+        <button class="filter-card" data-filter="cartoon" data-hotkey="8">
+          <div class="filter-badge">8</div>
+          <div class="filter-icon">🎨</div>
+          <div class="filter-info">
+            <div class="filter-name">Comic Cartoon</div>
+            <div class="filter-desc">Cel-shaded pop art outlines</div>
+          </div>
+        </button>
+
+        <!-- 9. Retro VHS Glitch -->
+        <button class="filter-card" data-filter="vhs" data-hotkey="9">
+          <div class="filter-badge">9</div>
+          <div class="filter-icon">📼</div>
+          <div class="filter-info">
+            <div class="filter-name">Retro VHS Glitch</div>
+            <div class="filter-desc">RGB split + 1989 scanlines</div>
+          </div>
+        </button>
+
+        <!-- 10. Alien Morph -->
+        <button class="filter-card" data-filter="alien" data-hotkey="0">
+          <div class="filter-badge">0</div>
+          <div class="filter-icon">👽</div>
+          <div class="filter-info">
+            <div class="filter-name">Alien Big Eyes</div>
+            <div class="filter-desc">Extraterrestrial eye magnification</div>
+          </div>
+        </button>
+
+        <!-- 11. HD Snapshot & Download -->
+        <button class="filter-card action-card" data-filter="snapshot" data-hotkey="-">
+          <div class="filter-badge">-</div>
+          <div class="filter-icon">📸</div>
+          <div class="filter-info">
+            <div class="filter-name">Photo Studio</div>
+            <div class="filter-desc">Countdown snap with HD download</div>
+          </div>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
